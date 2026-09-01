@@ -1,2 +1,2 @@
 # rm
-Rentals Mgmt
+RentalsManagement-MVP

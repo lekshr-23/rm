@@ -74,5 +74,25 @@ alter table public.r_bookings
         tstzrange(start_time, end_time, '[)') with &&
     );
 
+DROP POLICY IF EXISTS "anon_select_r_producttype" ON r_producttype;
+CREATE POLICY "anon_select_r_producttype" ON r_producttype FOR SELECT
+  TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "anon_insert_r_producttype" ON r_producttype;
+CREATE POLICY "anon_insert_r_producttype" ON r_producttype FOR INSERT
+  TO anon, authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "anon_update_r_producttype" ON r_producttype;
+CREATE POLICY "anon_update_r_producttype" ON r_producttype FOR UPDATE
+  TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "anon_select_r_productcategory" ON r_productcategory;
+CREATE POLICY "anon_select_r_productcategory" ON r_productcategory FOR SELECT
+  TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "anon_insert_r_productcategory" ON r_productcategory;
+CREATE POLICY "anon_insert_r_productcategory" ON r_productcategory FOR INSERT
+  TO anon, authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "anon_update_r_productcategory" ON r_productcategory;
+CREATE POLICY "anon_update_r_productcategory" ON r_productcategory FOR UPDATE
+  TO anon, authenticated USING (true) WITH CHECK (true);
+
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON r_producttype, r_productcategory, r_assets, r_bookings TO anon, authenticated;

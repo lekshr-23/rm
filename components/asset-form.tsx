@@ -26,12 +26,23 @@ type AssetRecord = {
   is_active: number;
 };
 
+type BookingRecord = {
+  id: string;
+  asset_id: string;
+  customer_name: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+};
+
 export function AssetForm({
   assets,
+  bookings,
   productTypes,
   categories,
 }: {
   assets: AssetRecord[];
+  bookings: BookingRecord[];
   productTypes: ProductType[];
   categories: ProductCategory[];
 }) {
@@ -46,6 +57,14 @@ export function AssetForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredCategories = categories.filter((category) => category.producttype_id === productTypeId);
+  const bookingMap = new Map<string, BookingRecord>();
+
+  bookings.forEach((booking) => {
+    const current = bookingMap.get(booking.asset_id);
+    if (!current || new Date(booking.start_time).getTime() > new Date(current.start_time).getTime()) {
+      bookingMap.set(booking.asset_id, booking);
+    }
+  });
 
   const handleProductTypeChange = (nextProductTypeId: string) => {
     setProductTypeId(nextProductTypeId);
@@ -159,33 +178,54 @@ export function AssetForm({
           {assets.length === 0 ? (
             <p className="text-sm text-slate-500">No assets found.</p>
           ) : (
-            assets.map((asset) => (
-              <div key={asset.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3">
-                <div className="flex items-center gap-3">
-                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: asset.color_hex || '#3b82f6' }} />
-                  <div>
-                    <p className="font-medium text-slate-800">{asset.serial_number}</p>
-                    <p className="text-xs text-slate-500">{asset.sku}</p>
+            assets.map((asset) => {
+              const latestBooking = bookingMap.get(asset.id);
+              const isBooked = !!latestBooking && (latestBooking.status === 'pending' || latestBooking.status === 'confirmed' || latestBooking.status === 'active');
+              const statusLabel = isBooked ? 'Booked' : asset.is_active === 1 ? 'Available' : 'Maintenance';
+              const statusClass = isBooked
+                ? 'bg-amber-100 text-amber-700'
+                : asset.is_active === 1
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-rose-100 text-rose-700';
+
+              return (
+                <div key={asset.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="h-3 w-3 rounded-full" style={{ backgroundColor: asset.color_hex || '#3b82f6' }} />
+                    <div>
+                      <p className="font-medium text-slate-800">{asset.serial_number}</p>
+                      <p className="text-xs text-slate-500">{asset.sku}</p>
+                      {isBooked ? (
+                        <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.12em] text-slate-500">
+                          Assigned to {latestBooking.customer_name}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase ${statusClass}`}>
+                      {statusLabel}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(asset)}
+                        className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(asset.id)}
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(asset)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(asset.id)}
-                    className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

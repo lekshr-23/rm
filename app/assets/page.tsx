@@ -45,10 +45,25 @@ async function getProductCategories() {
   return data ?? [];
 }
 
+async function getBookings() {
+  const { data, error } = await supabase
+    .from('r_bookings')
+    .select('id, asset_id, customer_name, status, start_time, end_time')
+    .order('start_time', { ascending: false });
+
+  if (error) {
+    console.error('Failed to fetch bookings:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
 export default async function AssetsPage() {
   const assets = await getAssets();
   const productTypes = await getProductTypes();
   const productCategories = await getProductCategories();
+  const bookings = await getBookings();
 
   return (
     <main className="min-h-screen bg-slate-100 p-4 md:p-6">
@@ -59,9 +74,24 @@ export default async function AssetsPage() {
         </div>
 
         <div className="space-y-6">
-          <ProductTypeForm productTypes={productTypes} />
-          <ProductCategoryForm categories={productCategories} productTypes={productTypes} />
-          <AssetForm assets={assets} productTypes={productTypes} categories={productCategories} />
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Catalog Setup</h2>
+              <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Metadata</span>
+            </div>
+            <div className="grid gap-6 xl:grid-cols-2">
+              <ProductTypeForm productTypes={productTypes} />
+              <ProductCategoryForm categories={productCategories} productTypes={productTypes} />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Asset Inventory</h2>
+              <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Assets</span>
+            </div>
+            <AssetForm assets={assets} bookings={bookings} productTypes={productTypes} categories={productCategories} />
+          </section>
         </div>
       </div>
     </main>

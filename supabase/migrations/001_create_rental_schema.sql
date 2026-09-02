@@ -34,6 +34,7 @@ create table if not exists public.r_bookings (
     asset_id uuid not null references public.r_assets(id) on delete cascade,
     customer_name text not null,
     customer_email text,
+    reference_no text,
     start_time timestamptz not null,
     end_time timestamptz not null,
     status text not null default 'pending' check (status in ('pending', 'confirmed', 'active', 'returned')),

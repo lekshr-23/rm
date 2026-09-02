@@ -1,19 +1,55 @@
 import { CalendarView } from '@/components/calendar-view';
+import { NewBookingForm } from '@/components/new-booking-form';
+import { supabase } from '@/lib/supabase';
 
-async function getBookings() {
-  const response = await fetch('http://localhost:3000/api/assets', {
-    cache: 'no-store',
-  });
+async function getAssets() {
+  const { data, error } = await supabase
+    .from('r_assets')
+    .select('id, serial_number, sku, color_hex, is_active')
+    .eq('is_active', 1)
+    .order('created_at', { ascending: false });
 
-  if (!response.ok) {
+  if (error) {
+    console.error('Failed to fetch available assets:', error.message);
     return [];
   }
 
-  const json = await response.json();
-  return json.bookings ?? [];
+  return data ?? [];
+}
+
+async function getBookings() {
+  const { data, error } = await supabase
+    .from('r_bookings')
+    .select('id, asset_id, customer_name, customer_email, start_time, end_time, status, notes')
+    .order('start_time', { ascending: true });
+
+  if (error) {
+    console.error('Failed to fetch bookings:', error.message);
+    return [];
+  }
+
+  const assetMap = new Map((await getAssets()).map((asset) => [asset.id, asset]));
+
+  return (data ?? []).map((booking) => {
+    const asset = assetMap.get(booking.asset_id);
+    const referenceNo = (booking.notes || '').match(/Reference No:\s*(.*)/i)?.[1] || '';
+
+    return {
+      id: booking.id,
+      assetId: booking.asset_id,
+      asset: asset ? `${asset.serial_number} • ${asset.sku}` : 'Asset',
+      customer: booking.customer_name,
+      status: booking.status || 'pending',
+      start: new Date(booking.start_time).toISOString(),
+      end: new Date(booking.end_time).toISOString(),
+      color: asset?.color_hex || '#3b82f6',
+      referenceNo,
+    };
+  });
 }
 
 export default async function BookingsPage() {
+  const assets = await getAssets();
   const bookings = await getBookings();
 
   return (
@@ -24,8 +60,12 @@ export default async function BookingsPage() {
           <h1 className="mt-1 text-3xl font-bold text-slate-900">Schedule Overview</h1>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-card">
-          <CalendarView bookings={bookings} />
+        <div className="space-y-6">
+          <NewBookingForm assets={assets} />
+
+          <div className="rounded-2xl bg-white p-5 shadow-card">
+            <CalendarView bookings={bookings} />
+          </div>
         </div>
       </div>
     </main>
